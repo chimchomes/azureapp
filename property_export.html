@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Moretime Ventures — Property Export</title>
+<style>
+  :root{
+    --bg:#efece6;          /* page background (warm sand) */
+    --card:#ffffff;        /* cards */
+    --text:#1f2328;        /* primary text */
+    --muted:#6b7280;       /* secondary text */
+    --border:#dfd9cf;      /* soft border */
+    --brand:#f2b300;       /* MV gold */
+    --brand-pressed:#e0a300;
+    --shadow:0 6px 18px rgba(0,0,0,.06);
+    --radius:22px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background:var(--bg); color:var(--text);
+  }
+
+  /* Header */
+  .appbar{
+    position:sticky; top:0; z-index:10;
+    backdrop-filter:saturate(160%) blur(2px);
+    background:rgba(255,255,255,.7);
+    border-bottom:1px solid var(--border);
+  }
+  .appbar-inner{
+    max-width:1100px; margin:0 auto; padding:14px 16px;
+    display:flex; align-items:center; gap:12px; justify-content:space-between;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.2px;
+    color:var(--brand); font-size:1.25rem;
+  }
+  .brand img{
+    width:44px; height:44px; border-radius:50%; object-fit:cover; box-shadow:var(--shadow);
+  }
+
+  /* Layout */
+  main{max-width:1100px; margin:24px auto; padding:0 16px 40px;}
+  .hero{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:26px; margin-bottom:18px;
+  }
+  .hero h1{
+    font-size:2.2rem; margin:0 0 6px 0; line-height:1.1;
+  }
+  .muted{color:var(--muted)}
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:20px; margin-top:16px;
+  }
+
+  /* Buttons */
+  .btn, a.btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 18px; border-radius:999px; border:1px solid var(--border);
+    background:#fff; cursor:pointer; text-decoration:none; color:var(--text);
+    transition:transform .02s ease, background .15s ease;
+  }
+  .btn:hover, a.btn:hover{background:#fafafa}
+  .btn:active, a.btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--brand); color:#000; border-color:transparent; font-weight:700;}
+  .btn.primary:hover{background:var(--brand-pressed)}
+
+  .btn.ghost{background:#fff;}
+  .btn.danger{color:#b42318; border-color:#e9c9c9; background:#fff7f7}
+
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+  /* Inputs */
+  input, textarea{
+    width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:14px;
+    background:#fff; outline:none;
+  }
+  textarea{resize:vertical}
+  label{font-weight:600; font-size:.95rem}
+
+  /* Row grid */
+  .row{display:grid; grid-template-columns: 1.1fr 1.8fr 1.2fr auto; gap:10px; margin-top:10px}
+  .pill{display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:#fff; border:1px solid var(--border)}
+
+  /* Link list */
+  ul.links{list-style:none; padding-left:0; margin:8px 0 0}
+  ul.links li{padding:8px 0; border-bottom:1px dashed var(--border)}
+  ul.links li:last-child{border-bottom:none}
+  .small{font-size:.9rem}
+</style>
+</head>
+<body>
+
+<!-- App Bar -->
+<div class="appbar">
+  <div class="appbar-inner">
+    <div class="brand">
+      <!-- swap src with your logo if you like -->
+      <img src="https://images.unsplash.com/photo-1542144582-1ba00456b5d5?q=80&w=200&auto=format&fit=crop" alt="MV">
+      Moretime Ventures
+    </div>
+    <div class="toolbar">
+      <a class="btn ghost" href="https://mymaps.google.com/" target="_blank">Open My Maps</a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- Hero -->
+  <div class="hero">
+    <h1>Property Export</h1>
+    <div class="muted">Create a CSV for <strong>Google My Maps</strong> and one-click links for saving places to your Google Maps lists.</div>
+  </div>
+
+  <!-- Builder Card -->
+  <div class="card">
+    <div class="toolbar" style="justify-content:space-between; margin-bottom:6px;">
+      <div class="pill"><strong>Addresses</strong> to include</div>
+      <div class="toolbar">
+        <button id="btn-add" class="btn">+ Add Row</button>
+        <button id="btn-clear" class="btn danger">Clear All</button>
+        <button id="btn-export" class="btn primary">Export CSV for My Maps</button>
+      </div>
+    </div>
+
+    <!-- rows -->
+    <div id="rows"></div>
+
+    <!-- links -->
+    <div class="card" style="margin-top:18px; background:#fffdf6">
+      <div class="toolbar" style="justify-content:space-between">
+        <div><strong>Quick “Open & Save” Links</strong></div>
+        <div class="small muted">Tip: <strong>Open link and Save to list in Google Maps.</strong></div>
+      </div>
+      <ul id="linkList" class="links"></ul>
+    </div>
+  </div>
+</main>
+
+<script>
+  /* ========= state ========= */
+  const KEY = 'mv.property-export.v1';
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY)||'[]'); } catch { return []; } }
+  function save(v){ localStorage.setItem(KEY, JSON.stringify(v)); }
+
+  const rowsEl = document.getElementById('rows');
+  const linkList = document.getElementById('linkList');
+
+  /* ========= render rows ========= */
+  function esc(s){ return String(s).replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  function render(){
+    const data = load();
+    rowsEl.innerHTML = '';
+    if(!data.length){
+      rowsEl.innerHTML = `<p class="muted">No rows yet — click <strong>+ Add Row</strong>.</p>`;
+    }else{
+      data.forEach(r=>{
+        const wrap = document.createElement('div');
+        wrap.className = 'row';
+        wrap.dataset.id = r.id;
+        wrap.innerHTML = `
+          <div>
+            <label>Name</label>
+            <input data-field="name" placeholder="Optional" value="${esc(r.name||'')}"/>
+          </div>
+          <div>
+            <label>Address / Postcode <span class="small muted">(required)</span></label>
+            <input data-field="address" placeholder="e.g., SW11 1AA" value="${esc(r.address||'')}"/>
+          </div>
+          <div>
+            <label>Notes</label>
+            <input data-field="notes" placeholder="" value="${esc(r.notes||'')}"/>
+          </div>
+          <div style="display:flex; align-items:end;">
+            <button class="btn danger btn-del" title="Remove">✕</button>
+          </div>
+        `;
+        // wire
+        wrap.querySelectorAll('[data-field]').forEach(inp=>{
+          inp.addEventListener('input', e=>{
+            const id = wrap.dataset.id;
+            const field = e.target.dataset.field;
+            const cur = load(); const i = cur.findIndex(x=>x.id===id);
+            if(i>=0){ cur[i][field] = e.target.value; save(cur); renderLinks(); }
+          });
+        });
+        wrap.querySelector('.btn-del').addEventListener('click', ()=>{
+          const cur = load().filter(x=>x.id!==r.id); save(cur); render(); renderLinks();
+        });
+        rowsEl.appendChild(wrap);
+      });
+    }
+    renderLinks();
+  }
+
+  function addRow(){ const cur=load(); cur.push({id:crypto.randomUUID(),name:'',address:'',notes:''}); save(cur); render(); }
+  function clearAll(){ if(!confirm('Clear all rows?')) return; save([]); render(); }
+
+  /* ========= links ========= */
+  function renderLinks(){
+    const items = load().filter(x => (x.address||'').trim());
+    linkList.innerHTML = items.length ? '' : `<li class="muted">Links appear here as you add addresses.</li>`;
+    items.forEach(item=>{
+      const q = encodeURIComponent(item.address.trim());
+      const url = `https://www.google.com/maps/search/?api=1&query=${q}`;
+      const label = (item.name?.trim()? `${item.name} — ` : '') + item.address;
+      const li = document.createElement('li');
+      li.innerHTML = `<a class="btn ghost" href="${url}" target="_blank">Open & Save</a> <span class="small">${esc(label)}</span>`;
+      linkList.appendChild(li);
+    });
+  }
+
+  /* ========= export csv ========= */
+  function exportCsv(){
+    const rows = load().filter(r => (r.address||'').trim());
+    if(!rows.length) return alert('Add at least one address.');
+    const csvRows = [['Name','Address','Notes'], ...rows.map(r=>[r.name||'', r.address||'', r.notes||''])];
+    const csv = csvRows.map(cols => cols.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href:url, download:'property-tour.csv' });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /* ========= events ========= */
+  document.getElementById('btn-add').addEventListener('click', addRow);
+  document.getElementById('btn-clear').addEventListener('click', clearAll);
+  document.getElementById('btn-export').addEventListener('click', exportCsv);
+
+  /* ========= init ========= */
+  render();
+</script>
+</body>
+</html>
